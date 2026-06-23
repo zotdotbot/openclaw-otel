@@ -1,0 +1,81 @@
+{
+  "name": "@zotdotbot/openclaw-otel",
+  "version": "0.1.0",
+  "description": "Self-contained OpenTelemetry plugin for OpenClaw — connected traces, per-turn token/cost rollups, opt-in content capture, and metrics, emitted as GenAI-semconv OTLP to any backend. Ships as one bundled file with zero runtime dependencies.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Zot",
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "install": {
+      "minHostVersion": "2026.4.21"
+    }
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "openclaw.plugin.json",
+    "CONTRACT.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.19"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify:package": "node scripts/verify-package.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "openclaw",
+    "opentelemetry",
+    "observability",
+    "llm",
+    "genai",
+    "tracing",
+    "metrics",
+    "otlp"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zotdotbot/openclaw-otel.git"
+  },
+  "homepage": "https://github.com/zotdotbot/openclaw-otel#readme",
+  "bugs": {
+    "url": "https://github.com/zotdotbot/openclaw-otel/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@grpc/grpc-js": "^1.14.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "^0.203.0",
+    "@opentelemetry/core": "^2.0.1",
+    "@opentelemetry/exporter-logs-otlp-grpc": "^0.203.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.203.0",
+    "@opentelemetry/exporter-metrics-otlp-grpc": "^0.203.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.203.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.203.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.203.0",
+    "@opentelemetry/resources": "^2.0.1",
+    "@opentelemetry/sdk-logs": "^0.203.0",
+    "@opentelemetry/sdk-metrics": "^2.0.1",
+    "@opentelemetry/sdk-trace-node": "^2.0.1",
+    "@opentelemetry/semantic-conventions": "^1.30.0",
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.9"
+  }
+}
