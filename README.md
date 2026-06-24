@@ -118,6 +118,7 @@ conversation hooks. A complete `openclaw.json` entry:
     "entries": {
       "openclaw-otel": {
         "enabled": true,
+        "hooks": { "allowConversationAccess": true },
         "config": {
           "endpoint": "http://localhost:4318",
           "protocol": "http",
@@ -128,13 +129,13 @@ conversation hooks. A complete `openclaw.json` entry:
         }
       }
     }
-  },
-  "hooks": { "allowConversationAccess": true }
+  }
 }
 ```
 
-`hooks.allowConversationAccess: true` is required on OpenClaw ≥ 2026.4.23, or the
-conversation hooks silently never fire.
+`plugins.entries.openclaw-otel.hooks.allowConversationAccess: true` is required, or
+the conversation hooks silently never fire. Note it's a **per-plugin** hook (inside
+the entry), not a top-level `hooks` block.
 
 <details>
 <summary>Prefer plain npm?</summary>
