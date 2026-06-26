@@ -106,7 +106,7 @@ package, unpacks it into your extensions directory, and adds the config entry:
 openclaw plugins install @zotdotbot/openclaw-otel
 ```
 
-On OpenClaw **2026.6.5+** this needs no flags. On 2026.5.28–6.1 the install-time
+On OpenClaw **2026.6.5+** this needs no flags. On 2026.5.28–6.4 the install-time
 scanner is still active, so you may need `--dangerously-force-unsafe-install` (or
 use the plain-`npm` path below). See [Compatibility](#compatibility) for the full
 version matrix.
@@ -188,7 +188,7 @@ graceful degradation — nothing crashes anywhere in the range.
 | OpenClaw | Support | Notes |
 | --- | --- | --- |
 | **2026.6.5 – 2026.6.10** | ✅ **Recommended** | Native `openclaw plugins install` is flag-free (install scanner removed at 6.5). Core + heartbeat + cron all work. |
-| 2026.5.28 – 2026.6.1 | ✅ Supported | Live-verified baseline (2026.5.28). All telemetry works. Install scanner still active → `openclaw plugins install` may need `--dangerously-force-unsafe-install`, or use `npm install` + manual config. |
+| 2026.5.28 – 2026.6.4 | ✅ Supported | Live-verified baseline (2026.5.28). All telemetry works. Install scanner still active → `openclaw plugins install` may need `--dangerously-force-unsafe-install`, or use `npm install` + manual config. |
 | 2026.4.29 – 2026.5.27 | ◐ Source-compatible¹ | All features present (core, heartbeat, cron). Same install caveat. |
 | 2026.4.27 – 2026.4.28 | ◐ Core + heartbeat¹ | Accurate token/cost rollups + heartbeat; cron telemetry needs ≥ 2026.4.29. |
 | 2026.4.21 – 2026.4.26 | ◐ Core, degraded¹ | Traces / metrics / logs emit, but token/cost is approximate (accurate path needs 2026.4.27) and per-model-call spans need 2026.4.25. No heartbeat/cron. |
