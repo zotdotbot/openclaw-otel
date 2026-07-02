@@ -470,14 +470,18 @@ export function registerHooks(api: any, deps: HooksDeps): () => void {
     store.touchActivity(key, now()); // turn is doing work — keep it off the stale sweep
     const turn = store.getAgentTurn(key);
     const parent = turn?.context ?? store.resolveContext(key) ?? ROOT_CONTEXT;
-    const model = firstString(event.model, event.requestModel) ?? "unknown";
+    // No placeholder fallback: when the host event carries no model/provider
+    // (OpenRouter/DeepSeek on 2026.5.28), the attrs are OMITTED and the span
+    // name falls back to bare "chat". A literal "unknown" masks the real model
+    // for every consumer downstream (issue #5).
+    const model = firstString(event.model, event.requestModel);
     const chatSpan = tracer.startSpan(
       spanNameChat(model),
       {
         kind: SpanKind.CLIENT,
         attributes: attrs({
           [GEN_AI_OPERATION_NAME]: OP_CHAT,
-          [GEN_AI_PROVIDER_NAME]: firstString(event.provider) ?? "unknown",
+          [GEN_AI_PROVIDER_NAME]: firstString(event.provider),
           [GEN_AI_REQUEST_MODEL]: model,
           [GEN_AI_CONVERSATION_ID]: key,
         }),
@@ -757,7 +761,10 @@ export function registerHooks(api: any, deps: HooksDeps): () => void {
           [GEN_AI_CONVERSATION_ID]: key,
           [GEN_AI_USAGE_INPUT_TOKENS]: usage.input ?? 0,
           [GEN_AI_USAGE_OUTPUT_TOKENS]: usage.output ?? 0,
-          [GEN_AI_RESPONSE_MODEL]: firstString(event.responseModel, event.model, usage.model) ?? "unknown",
+          // Omitted (never "unknown") when the event carries no model; the
+          // model.usage diagnostic back-fills the real name on the held-open
+          // span via enrichSpanWithUsage when it lands (issue #5).
+          [GEN_AI_RESPONSE_MODEL]: firstString(event.responseModel, event.model, usage.model),
           [OPENCLAW_AGENT_SUCCESS]: event.success !== false,
           [GEN_AI_USAGE_CACHE_READ_INPUT_TOKENS]: usage.cacheRead && usage.cacheRead > 0 ? usage.cacheRead : undefined,
           [GEN_AI_USAGE_CACHE_CREATION_INPUT_TOKENS]:

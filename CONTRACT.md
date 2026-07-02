@@ -7,7 +7,17 @@ consumers parse. The machine-readable source of truth is
 ([`tests/contract.test.ts`](tests/contract.test.ts)) enforces it.
 
 Every signal carries the resource attribute `openclaw.schema.version` (currently
-**`1.7.0`**). `1.7.0` is an **additive** bump over `1.6.0` adding the
+**`1.8.0`**). `1.8.0` is a **loosening** bump over `1.7.0`
+([issue #5](https://github.com/zotdotbot/openclaw-otel/issues/5)):
+`gen_ai.request.model` + `gen_ai.provider.name` on `chat` spans and
+`gen_ai.response.model` on `openclaw.agent.turn` are now **optional** — the
+plugin **omits** them (never the literal `"unknown"`) when the host events carry
+no model/provider (e.g. OpenRouter/DeepSeek on OpenClaw 2026.5.28), and the chat
+span name falls back to the bare `chat`. A populated placeholder is
+indistinguishable from a real model and poisons downstream cost attribution;
+an absent attribute lets consumers coalesce correctly. When the `model.usage`
+diagnostic carries the model, the held-open turn span is still back-filled with
+the real name. `1.7.0` was an **additive** bump over `1.6.0` adding the
 **best-effort** `openclaw.version` resource attribute — the HOST OpenClaw
 gateway version, resolved from the host's `package.json` at startup and
 **omitted** when resolution fails, so consumers must treat it as optional
@@ -40,8 +50,8 @@ downstream consumers in lockstep.**
 | Span | Name | Kind | Required attributes | Content (policy-gated) |
 | --- | --- | --- | --- | --- |
 | Request root | `openclaw.request` | SERVER | `openclaw.session.key`, `gen_ai.conversation.id`, `openclaw.message.channel`, `openclaw.message.direction` | `openclaw.content.input_message` |
-| Agent turn | `openclaw.agent.turn` | INTERNAL | `openclaw.session.key`, `gen_ai.conversation.id`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.response.model`, `openclaw.agent.success` | `openclaw.content.prompt`, `.messages`, `.system_prompt` |
-| Model call | `chat <model>` | CLIENT | `gen_ai.operation.name`, `gen_ai.provider.name`, `gen_ai.request.model`, `gen_ai.conversation.id` | — |
+| Agent turn | `openclaw.agent.turn` | INTERNAL | `openclaw.session.key`, `gen_ai.conversation.id`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `openclaw.agent.success` (`gen_ai.response.model` optional since 1.8.0 — omitted when unresolvable, never `"unknown"`) | `openclaw.content.prompt`, `.messages`, `.system_prompt` |
+| Model call | `chat <model>` (bare `chat` when the model is unresolvable, 1.8.0) | CLIENT | `gen_ai.operation.name`, `gen_ai.conversation.id` (`gen_ai.request.model`, `gen_ai.provider.name` optional since 1.8.0 — omitted when unresolvable, never `"unknown"`) | — |
 | Tool call | `execute_tool <tool>` | INTERNAL | `gen_ai.operation.name`, `gen_ai.tool.name`, `gen_ai.tool.call.id`, `gen_ai.conversation.id`, `openclaw.tool.name` | `openclaw.content.tool_input`, `.tool_output` |
 | Outbound reply | `openclaw.message.sent` | INTERNAL | `openclaw.session.key`, `gen_ai.conversation.id`, `openclaw.message.direction`, `openclaw.message.chars` | `openclaw.content.output_message` |
 | Skill activation | `openclaw.skill.used` | INTERNAL | `openclaw.session.key`, `gen_ai.conversation.id`, `openclaw.skill.name`, `openclaw.skill.source` | — |
@@ -178,7 +188,10 @@ emitted only when `metrics` is on (and, for heartbeat, `heartbeat` is on). The
   `"{}"` (never null/absent) for `openclaw.content.tool_input` — the consumer
   treats `"{}"` as empty and otherwise mis-detects capture state.
 - **Model-name fallback.** The consumer reads `openclaw.model` as a fallback to
-  `gen_ai.request.model` on model/usage spans. Keep at least one present.
+  `gen_ai.request.model` on model/usage spans. Emit whichever is known; when
+  neither is resolvable (1.8.0, issue #5) both are **absent** — never the
+  literal `"unknown"`, which consumers cannot distinguish from a real model —
+  and the consumer excludes the span from its models list.
 - **Tool errors carry the real reason (issue #7).** On a tool error the span
   **status message** holds the real, sanitized error (≤200 chars, single line,
   never the tool's full output) — the consumer reads `statusMessage`, so a bare

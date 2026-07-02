@@ -26,8 +26,8 @@ import {
 import * as sem from "../src/semconv";
 
 describe("frozen schema version", () => {
-  it("is pinned at 1.7.0 across contract and semconv", () => {
-    expect(SCHEMA_VERSION).toBe("1.7.0");
+  it("is pinned at 1.8.0 across contract and semconv", () => {
+    expect(SCHEMA_VERSION).toBe("1.8.0");
     expect(sem.OPENCLAW_SCHEMA_VERSION).toBe(SCHEMA_VERSION);
   });
 
@@ -98,6 +98,11 @@ describe("findSpanContract", () => {
     expect(findSpanContract(sem.spanNameChat("claude-opus-4-6"))?.name).toBe("chat ");
     expect(findSpanContract(sem.spanNameExecuteTool("exec"))?.name).toBe("execute_tool ");
     expect(findSpanContract("openclaw.message.sent")?.name).toBe("openclaw.message.sent");
+  });
+
+  it("matches the bare modelless span names to their prefix contracts (1.8.0)", () => {
+    expect(findSpanContract(sem.spanNameChat())?.name).toBe("chat ");
+    expect(findSpanContract("chat")?.name).toBe("chat ");
   });
 
   it("returns undefined for an unknown span name", () => {

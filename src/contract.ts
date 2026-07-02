@@ -180,7 +180,6 @@ export const CONTRACT_SPANS: readonly ContractSpan[] = [
       "gen_ai.conversation.id",
       "gen_ai.usage.input_tokens",
       "gen_ai.usage.output_tokens",
-      "gen_ai.response.model",
       "openclaw.agent.success",
     ],
     contentAttributes: [
@@ -189,6 +188,12 @@ export const CONTRACT_SPANS: readonly ContractSpan[] = [
       "openclaw.content.system_prompt",
     ],
     optionalReadAttributes: [
+      // OPTIONAL since 1.8.0 (issue #5): omitted when the agent_end event and
+      // the model.usage diagnostic carry no model — NEVER the literal "unknown",
+      // which masks the real model for downstream cost attribution. When the
+      // model.usage diagnostic carries a model, enrichSpanWithUsage back-fills
+      // it on the held-open span.
+      "gen_ai.response.model",
       // Split-out cache token attrs MUST stay when nonzero; the rollup folds them.
       "gen_ai.usage.cache_read.input_tokens",
       "gen_ai.usage.cache_creation.input_tokens",
@@ -221,16 +226,20 @@ export const CONTRACT_SPANS: readonly ContractSpan[] = [
     emittedByPlugin: true,
     requiredAttributes: [
       "gen_ai.operation.name",
-      "gen_ai.provider.name",
-      "gen_ai.request.model",
       "gen_ai.conversation.id",
     ],
     contentAttributes: [],
     optionalReadAttributes: [
+      // OPTIONAL since 1.8.0 (issue #5): omitted when the model_call_started
+      // event carries no model/provider (OpenRouter/DeepSeek on 2026.5.28) —
+      // NEVER the literal "unknown", which is indistinguishable from a real
+      // value and poisons downstream cost attribution.
+      "gen_ai.request.model",
+      "gen_ai.provider.name",
       // Model-name FALLBACK actually read by the consumer (audit-confirmed):
-      // gen_ai.request.model is required and present, so this is harmless today,
-      // but it IS read — do not relabel it as consumer-ignored. Keep at least
-      // one of {gen_ai.request.model, openclaw.model}.
+      // it IS read — do not relabel it as consumer-ignored. When BOTH
+      // gen_ai.request.model and openclaw.model are absent, the consumer
+      // excludes the span from its models list — the correct behavior.
       "openclaw.model",
       // Per-call latency/size, read from the model_call_ended hook event and set
       // HERE (on chat) rather than a separate openclaw.model.call span (which
@@ -241,7 +250,8 @@ export const CONTRACT_SPANS: readonly ContractSpan[] = [
       "openclaw.model_call.response_bytes",
     ],
     notes:
-      "Name = 'chat ' + model. The consumer matches the span-name prefix 'chat ' AND the " +
+      "Name = 'chat ' + model, or the bare 'chat' when no model is resolvable " +
+      "(1.8.0, issue #5). The consumer matches the span-name prefix 'chat ' AND the " +
       "exact 'chat' => ROLE_MODEL; classification is by SPAN NAME ONLY, never by " +
       "gen_ai.operation.name. This span MAY duplicate the turn's gen_ai.usage.* " +
       "verbatim — the consumer must NOT sum both. operational_signals reads " +
@@ -720,9 +730,14 @@ export const CONSUMER_ONLY_SPANS: readonly ContractSpan[] = CONTRACT_SPANS.filte
 );
 
 /** Look up a span contract by an emitted span's name, honoring exact vs prefix
- *  matching. Returns the matching {@link ContractSpan} or `undefined`. */
+ *  matching. A prefix entry also matches its bare trimmed name (e.g. the
+ *  modelless `chat` span, 1.8.0) — mirroring the consumer's classifier, which
+ *  accepts `op.startsWith("chat ") || op === "chat"`. Returns the matching
+ *  {@link ContractSpan} or `undefined`. */
 export function findSpanContract(spanName: string): ContractSpan | undefined {
   return CONTRACT_SPANS.find((s) =>
-    s.match === "exact" ? spanName === s.name : spanName.startsWith(s.name),
+    s.match === "exact"
+      ? spanName === s.name
+      : spanName.startsWith(s.name) || spanName === s.name.trimEnd(),
   );
 }
