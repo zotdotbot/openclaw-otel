@@ -95,7 +95,7 @@ It uses OpenTelemetry provider *instances* directly and never calls
 `setGlobalTracerProvider`, so it runs alongside OpenClaw's built-in
 `diagnostics.otel` without fighting over the `@opentelemetry/api` global. The exact
 span and attribute vocabulary is a frozen, versioned wire contract
-(`schema.version` `1.7.0`) — see [CONTRACT.md](CONTRACT.md).
+(`schema.version` `1.8.0`) — see [CONTRACT.md](CONTRACT.md).
 
 ## Install & enable
 

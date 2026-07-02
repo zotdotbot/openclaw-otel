@@ -56,7 +56,7 @@ describe("plugin register() lifecycle", () => {
     const res = await api.toolDefs[0].execute();
     const payload = JSON.parse(res.content[0].text);
     expect(payload.initialized).toBe(true);
-    expect(payload.schemaVersion).toBe("1.7.0");
+    expect(payload.schemaVersion).toBe("1.8.0");
   });
 
   it("wires the opt-in heartbeat subscription cleanly (bus absent in test → no-op, teardown resolves)", async () => {

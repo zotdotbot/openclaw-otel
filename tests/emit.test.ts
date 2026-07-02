@@ -171,6 +171,23 @@ describe("emit oracle — required attributes are never dropped", () => {
     h.cleanup();
   });
 
+  it("a modelless turn (no model/provider on any event) still satisfies every requiredAttribute", () => {
+    const h = harness();
+    h.fire("message_received", { sessionKey: SESSION, channel: "slack", from: "slack:U1", content: "x" });
+    h.fire("before_model_resolve", { sessionKey: SESSION });
+    h.fire("model_call_started", { sessionKey: SESSION });
+    h.fire("model_call_ended", { sessionKey: SESSION, usage: { input_tokens: 1, output_tokens: 1 } });
+    h.fire("agent_end", { sessionKey: SESSION, success: true, usage: { input_tokens: 1, output_tokens: 1 } });
+    for (const span of h.spans()) {
+      const c = findSpanContract(span.name);
+      if (!c || !c.emittedByPlugin) continue;
+      for (const attr of c.requiredAttributes) {
+        expect(span.attributes[attr], `${span.name} missing required ${attr}`).toBeDefined();
+      }
+    }
+    h.cleanup();
+  });
+
   it("a synthetic-root turn (no message_received) still sets the required message.channel", () => {
     const h = harness();
     const key = "agent:1:discord:x";
@@ -638,6 +655,78 @@ describe("emit oracle — per-call detail on chat / execute_tool (ttfb, exec exi
     const tool = h.byPrefix("execute_tool ")!;
     expect(tool.attributes["openclaw.exec.exit_code"]).toBeUndefined();
     expect(tool.attributes["openclaw.exec.timed_out"]).toBeUndefined();
+    h.cleanup();
+  });
+});
+
+describe('emit oracle — no literal "unknown" in gen_ai attrs (issue #5)', () => {
+  // OpenRouter/DeepSeek path on 2026.5.28: model_call_started / agent_end carry
+  // NO model or provider fields. A populated "unknown" is indistinguishable
+  // from a real value and poisons downstream cost attribution — the attribute
+  // must be ABSENT instead (GenAI semconv), and the span name falls back to
+  // the bare operation name "chat".
+
+  /** A full turn whose events never carry a model or provider. */
+  const runModellessTurn = (h: ReturnType<typeof harness>) => {
+    h.fire("message_received", { sessionKey: SESSION, channel: "slack", from: "slack:U1", content: "x" });
+    h.fire("before_model_resolve", { sessionKey: SESSION });
+    h.fire("model_call_started", { sessionKey: SESSION });
+    h.fire("model_call_ended", { sessionKey: SESSION, usage: { input_tokens: 1, output_tokens: 1 } });
+    h.fire("agent_end", { sessionKey: SESSION, success: true, usage: { input_tokens: 1, output_tokens: 1 } });
+  };
+
+  it("names the modelless chat span bare 'chat' and omits gen_ai.request.model / provider.name", () => {
+    const h = harness();
+    runModellessTurn(h);
+    const chat = h.byName("chat")!;
+    expect(chat).toBeDefined();
+    expect(chat.attributes["gen_ai.request.model"]).toBeUndefined();
+    expect(chat.attributes["gen_ai.provider.name"]).toBeUndefined();
+    expect(chat.attributes["gen_ai.operation.name"]).toBe("chat");
+    expect(chat.attributes["gen_ai.conversation.id"]).toBe(SESSION);
+    h.cleanup();
+  });
+
+  it("omits gen_ai.response.model on the turn rollup when no model is resolvable", () => {
+    const h = harness();
+    runModellessTurn(h);
+    const turn = h.byName("openclaw.agent.turn")!;
+    expect(turn).toBeDefined();
+    expect(turn.attributes["gen_ai.response.model"]).toBeUndefined();
+    h.cleanup();
+  });
+
+  it("never emits the literal 'unknown' for any gen_ai.* attribute on a modelless turn", () => {
+    const h = harness();
+    runModellessTurn(h);
+    for (const s of h.spans()) {
+      for (const [k, v] of Object.entries(s.attributes)) {
+        if (k.startsWith("gen_ai.")) expect(v, `${s.name} ${k}`).not.toBe("unknown");
+      }
+    }
+    h.cleanup();
+  });
+
+  it("recovers the real model on the held-open turn from the model.usage diagnostic", () => {
+    const coordinator = new UsageCoordinator();
+    const h = harness(CONTENT_POLICY_DISABLED, coordinator);
+    runModellessTurn(h); // agent_end parks the turn awaiting the diagnostic
+    expect(h.byName("openclaw.agent.turn")).toBeUndefined();
+    h.fireDiagnostic({
+      type: "model.usage",
+      sessionKey: SESSION,
+      model: "deepseek/deepseek-v4-pro",
+      usage: { input: 5, output: 2 },
+    });
+    const turn = h.byName("openclaw.agent.turn")!;
+    expect(turn).toBeDefined();
+    expect(turn.attributes["gen_ai.response.model"]).toBe("deepseek/deepseek-v4-pro");
+    // The chat span ended at model_call_ended, BEFORE the diagnostic — the
+    // back-fill must touch only the held-open turn, never rename or enrich
+    // the already-exported chat span.
+    const chat = h.byName("chat")!;
+    expect(chat).toBeDefined();
+    expect(chat.attributes["gen_ai.request.model"]).toBeUndefined();
     h.cleanup();
   });
 });

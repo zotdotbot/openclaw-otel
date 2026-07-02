@@ -436,8 +436,15 @@ export const SPAN_PREFIX_CHAT = "chat ";
 /** Prefix for tool spans: `"execute_tool " + tool`. Consumer classifies by name. */
 export const SPAN_PREFIX_EXECUTE_TOOL = "execute_tool ";
 
-/** Build the CLIENT model span name from a model id. */
-export const spanNameChat = (model: string): string => `${SPAN_PREFIX_CHAT}${model}`;
+/**
+ * Build the CLIENT model span name from a model id. When the host events carry
+ * no model (OpenRouter/DeepSeek on 2026.5.28), the name is the bare operation
+ * "chat" per GenAI semconv — NEVER a placeholder like "chat unknown", which
+ * consumers can't distinguish from a real model (issue #5). The consumer
+ * classifies both forms as ROLE_MODEL (`op.startsWith("chat ") || op === "chat"`).
+ */
+export const spanNameChat = (model?: string): string =>
+  model ? `${SPAN_PREFIX_CHAT}${model}` : "chat";
 /** Build the INTERNAL tool span name from a tool name. */
 export const spanNameExecuteTool = (tool: string): string =>
   `${SPAN_PREFIX_EXECUTE_TOOL}${tool}`;
@@ -515,8 +522,15 @@ export const OTEL_SCHEMA_URL = "https://opentelemetry.io/schemas/1.41.1" as cons
  * (`1.5.0` re-homed the operational diagnostic spans + per-call detail; `1.4.0`
  * added `openclaw.skill.used` + tool-error attrs over `1.3.0`.) All-new span
  * names, attributes, and metrics only, so older consumers ignore them.
+ *
+ * `1.8.0` is a LOOSENING bump over `1.7.0` (issue #5): `gen_ai.request.model` +
+ * `gen_ai.provider.name` on `chat ` spans and `gen_ai.response.model` on
+ * `openclaw.agent.turn` are now OPTIONAL — omitted (never the literal
+ * `"unknown"`) when the host events carry no model/provider, and the chat span
+ * name falls back to bare `"chat"`. Consumers that coalesce absent → fallback
+ * are unaffected; consumers that required these attrs must relax them.
  */
-export const OPENCLAW_SCHEMA_VERSION = "1.7.0" as const;
+export const OPENCLAW_SCHEMA_VERSION = "1.8.0" as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Token-type enum values

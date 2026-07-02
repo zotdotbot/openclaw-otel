@@ -174,6 +174,19 @@ describe("consumer parity — span classification", () => {
     h.cleanup();
   });
 
+  it("classifies a modelless bare 'chat' span as MODEL (consumer handles op === 'chat')", () => {
+    const h = harness();
+    h.fire("message_received", { sessionKey: SESSION, content: "x" });
+    h.fire("before_model_resolve", { sessionKey: SESSION });
+    h.fire("model_call_started", { sessionKey: SESSION }); // no model/provider (OpenRouter path)
+    h.fire("model_call_ended", { sessionKey: SESSION, usage: { input_tokens: 1, output_tokens: 1 } });
+    h.fire("agent_end", { sessionKey: SESSION, success: true, usage: { input_tokens: 1, output_tokens: 1 } });
+    const chat = h.spans().find((s) => s.name === "chat")!;
+    expect(chat).toBeDefined();
+    expect(classify(chat.name, attrsOf(chat))).toBe("MODEL");
+    h.cleanup();
+  });
+
   it("demotes the synthetic tool echo to OTHER so tool calls are not double-counted", () => {
     const h = harness();
     h.fire("message_received", { sessionKey: SESSION, content: "x" });
