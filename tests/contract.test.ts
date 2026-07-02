@@ -26,8 +26,8 @@ import {
 import * as sem from "../src/semconv";
 
 describe("frozen schema version", () => {
-  it("is pinned at 1.6.0 across contract and semconv", () => {
-    expect(SCHEMA_VERSION).toBe("1.6.0");
+  it("is pinned at 1.7.0 across contract and semconv", () => {
+    expect(SCHEMA_VERSION).toBe("1.7.0");
     expect(sem.OPENCLAW_SCHEMA_VERSION).toBe(SCHEMA_VERSION);
   });
 
@@ -132,6 +132,10 @@ describe("resource attributes", () => {
     expect(RESOURCE_ATTRIBUTES).toContain("service.name");
     expect(RESOURCE_ATTRIBUTES).toContain("service.version");
     expect(RESOURCE_ATTRIBUTES).toContain(sem.RESOURCE_OPENCLAW_SCHEMA_VERSION);
+  });
+
+  it("declare the best-effort host gateway version attribute (1.7.0)", () => {
+    expect(RESOURCE_ATTRIBUTES).toContain(sem.RESOURCE_OPENCLAW_VERSION);
   });
 });
 

@@ -61,6 +61,35 @@ describe("buildResource", () => {
     });
     expect(warnings.some((w) => w.includes("service.name"))).toBe(true);
   });
+
+  it("stamps openclaw.version when a host version is resolved", () => {
+    const r = buildResource(parseConfig({}), undefined, "2026.6.11");
+    expect(r.attributes["openclaw.version"]).toBe("2026.6.11");
+  });
+
+  it("omits openclaw.version when no host version is resolved", () => {
+    const r = buildResource(parseConfig({}), undefined, undefined);
+    expect(r.attributes["openclaw.version"]).toBeUndefined();
+  });
+
+  it("prefers the resolved host version over an operator-supplied openclaw.version", () => {
+    const r = buildResource(
+      parseConfig({ resourceAttributes: { "openclaw.version": "operator-says" } }),
+      undefined,
+      "2026.6.11",
+    );
+    expect(r.attributes["openclaw.version"]).toBe("2026.6.11");
+  });
+
+  it("lets an operator-supplied openclaw.version through when resolution failed", () => {
+    // Manual escape hatch for hosts where the package.json walk finds nothing.
+    const r = buildResource(
+      parseConfig({ resourceAttributes: { "openclaw.version": "2026.5.20" } }),
+      undefined,
+      undefined,
+    );
+    expect(r.attributes["openclaw.version"]).toBe("2026.5.20");
+  });
 });
 
 describe("buildSampler", () => {
