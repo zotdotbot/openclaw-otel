@@ -7,7 +7,14 @@ consumers parse. The machine-readable source of truth is
 ([`tests/contract.test.ts`](tests/contract.test.ts)) enforces it.
 
 Every signal carries the resource attribute `openclaw.schema.version` (currently
-**`1.6.0`**). `1.6.0` is an **additive** bump over `1.5.0` covering cron and
+**`1.7.0`**). `1.7.0` is an **additive** bump over `1.6.0` adding the
+**best-effort** `openclaw.version` resource attribute — the HOST OpenClaw
+gateway version, resolved from the host's `package.json` at startup and
+**omitted** when resolution fails, so consumers must treat it as optional
+(distinct from `service.version`, which is this plugin's own version; an
+operator-supplied `resourceAttributes["openclaw.version"]` acts as a manual
+fallback when resolution fails, and is overridden when it succeeds).
+`1.6.0` was an **additive** bump over `1.5.0` covering cron and
 heartbeat lifecycle: the cron spans `openclaw.cron.run` / `openclaw.cron.definition`
 (driven by the `cron_changed` gateway hook), the opt-in default-off
 `openclaw.heartbeat.run` span (driven by the `onHeartbeatEvent` bus), the

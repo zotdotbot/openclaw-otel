@@ -654,12 +654,16 @@ export const CONTRACT_METRICS: readonly ContractMetric[] = [
 
 /** Attributes carried on the emitted OTel Resource. `openclaw.schema.version`
  *  always equals {@link SCHEMA_VERSION}; the Resource also carries the pinned
- *  {@link OTEL_SEMCONV_SCHEMA_URL} as its schema URL. */
+ *  {@link OTEL_SEMCONV_SCHEMA_URL} as its schema URL. `openclaw.version`
+ *  (1.7.0) is the HOST gateway version, BEST-EFFORT: resolved from the host's
+ *  package.json at startup and OMITTED when resolution fails — consumers must
+ *  treat it as optional. */
 export const RESOURCE_ATTRIBUTES: readonly string[] = [
   "service.name",
   "service.version",
   "openclaw.plugin",
   "openclaw.schema.version",
+  "openclaw.version",
 ] as const;
 
 // ───────────────────────────────────────────────────────────────────────────

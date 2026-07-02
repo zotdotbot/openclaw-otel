@@ -477,6 +477,13 @@ export const RESOURCE_SERVICE_VERSION = "service.version";
 export const RESOURCE_OPENCLAW_PLUGIN = "openclaw.plugin";
 /** Carries {@link OPENCLAW_SCHEMA_VERSION} on the Resource. */
 export const RESOURCE_OPENCLAW_SCHEMA_VERSION = "openclaw.schema.version";
+/**
+ * The HOST OpenClaw gateway version (1.7.0, BEST-EFFORT): resolved from the
+ * host's `package.json` at startup (see host-version.ts) and omitted when
+ * resolution fails, so consumers must treat it as optional. Distinct from
+ * `service.version`, which is this plugin's own version.
+ */
+export const RESOURCE_OPENCLAW_VERSION = "openclaw.version";
 
 /**
  * OpenTelemetry semantic-conventions schema URL emitted on the Resource — the
@@ -493,8 +500,10 @@ export const OTEL_SCHEMA_URL = "https://opentelemetry.io/schemas/1.41.1" as cons
 /**
  * Plugin-domain schema version — the SINGLE SOURCE of truth (contract.ts
  * re-exports this as `SCHEMA_VERSION`); rides on every span/Resource as
- * `openclaw.schema.version`. `1.6.0` is an ADDITIVE bump over `1.5.0` covering
- * cron AND heartbeat lifecycle:
+ * `openclaw.schema.version`. `1.7.0` is an ADDITIVE bump over `1.6.0` adding
+ * the BEST-EFFORT `openclaw.version` resource attribute (host gateway version,
+ * omitted when unresolvable — consumers must not require it). `1.6.0` was an
+ * ADDITIVE bump over `1.5.0` covering cron AND heartbeat lifecycle:
  *   - cron-lifecycle spans `openclaw.cron.run` + `openclaw.cron.definition`
  *     (driven by the `cron_changed` gateway hook, covering turn-less / skipped /
  *     CLI-provider runs the agent-turn path never sees) and the `openclaw.cron.*`
@@ -507,7 +516,7 @@ export const OTEL_SCHEMA_URL = "https://opentelemetry.io/schemas/1.41.1" as cons
  * added `openclaw.skill.used` + tool-error attrs over `1.3.0`.) All-new span
  * names, attributes, and metrics only, so older consumers ignore them.
  */
-export const OPENCLAW_SCHEMA_VERSION = "1.6.0" as const;
+export const OPENCLAW_SCHEMA_VERSION = "1.7.0" as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Token-type enum values

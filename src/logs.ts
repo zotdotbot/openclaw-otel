@@ -32,6 +32,7 @@ import {
 } from "./telemetry";
 import { CONTENT_MAX_CHARS } from "./hooks";
 import { PLUGIN_VERSION } from "./version";
+import { resolveHostVersion } from "./host-version";
 import { OTEL_SEMCONV_SCHEMA_URL } from "./contract";
 import { OPENCLAW_SESSION_KEY } from "./semconv";
 
@@ -193,7 +194,7 @@ export function initLogs(
   logger?: TelemetryLogger,
 ): LogRuntime {
   const provider = new LoggerProvider({
-    resource: buildResource(config, logger),
+    resource: buildResource(config, logger, resolveHostVersion(process.argv[1])),
     processors: [new BatchLogRecordProcessor(buildLogExporter(config, logger))],
   });
   const log: Logger = provider.getLogger(INSTRUMENTATION_SCOPE, PLUGIN_VERSION, {

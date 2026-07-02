@@ -41,10 +41,12 @@ import { OTLPMetricExporter as OTLPMetricExporterGRPC } from "@opentelemetry/exp
 
 import type { OtelObservabilityConfig } from "./config";
 import { PLUGIN_ID, PLUGIN_VERSION } from "./version";
+import { resolveHostVersion } from "./host-version";
 import { SCHEMA_VERSION, OTEL_SEMCONV_SCHEMA_URL } from "./contract";
 import {
   RESOURCE_OPENCLAW_PLUGIN,
   RESOURCE_OPENCLAW_SCHEMA_VERSION,
+  RESOURCE_OPENCLAW_VERSION,
   METRIC_GEN_AI_CLIENT_TOKEN_USAGE,
   METRIC_GEN_AI_CLIENT_OPERATION_DURATION,
   METRIC_OPENCLAW_SESSION_STALLED,
@@ -121,10 +123,16 @@ const RESERVED_RESOURCE_KEYS: readonly string[] = [
 /** Build the OTel Resource carrying the four contract resource attributes plus
  *  any operator-supplied extras, tagged with the pinned semconv schema URL.
  *  Operator extras are spread FIRST so the contract identity always wins (see
- *  {@link RESERVED_RESOURCE_KEYS}); a reserved-key collision is logged. */
+ *  {@link RESERVED_RESOURCE_KEYS}); a reserved-key collision is logged.
+ *  `hostVersion` (callers pass {@link resolveHostVersion}) stamps the
+ *  BEST-EFFORT `openclaw.version`: a resolved value wins over an operator
+ *  extra (ground truth beats config, no warning — it is not an identity key);
+ *  when unresolved, an operator-supplied `openclaw.version` passes through as
+ *  the manual escape hatch. */
 export function buildResource(
   config: OtelObservabilityConfig,
   logger?: TelemetryLogger,
+  hostVersion?: string,
 ): Resource {
   const collisions = RESERVED_RESOURCE_KEYS.filter(
     (k) => k in config.resourceAttributes,
@@ -139,6 +147,9 @@ export function buildResource(
   return resourceFromAttributes(
     {
       ...config.resourceAttributes,
+      ...(hostVersion !== undefined
+        ? { [RESOURCE_OPENCLAW_VERSION]: hostVersion }
+        : {}),
       [ATTR_SERVICE_NAME]: config.serviceName,
       [ATTR_SERVICE_VERSION]: PLUGIN_VERSION,
       [RESOURCE_OPENCLAW_PLUGIN]: PLUGIN_ID,
@@ -299,7 +310,7 @@ export function initTelemetry(
   config: OtelObservabilityConfig,
   logger?: TelemetryLogger,
 ): TelemetryRuntime {
-  const resource = buildResource(config, logger);
+  const resource = buildResource(config, logger, resolveHostVersion(process.argv[1]));
   const providers: FlushableProvider[] = [];
 
   // ── Traces ──
