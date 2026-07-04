@@ -14,7 +14,7 @@ semconv — exported as OTLP to any backend (SigNoz, Datadog, Grafana, …). Shi
 as **one bundled file with zero runtime dependencies**.
 
 ```
-openclaw.request [28.1s]                      ← one Slack turn, one trace
+openclaw.request [28.1s]                      ← one agent turn (any channel), one trace
 ├─ openclaw.agent.turn [27.3s]                ← gen_ai.usage.* rollup, agent.success
 │  ├─ openclaw.context.assembled              ← prompt/system/message sizing, budget
 │  ├─ chat claude-opus-4-6 [4.3s]             ← GenAI semconv CLIENT spans (+ ttfb, bytes)
