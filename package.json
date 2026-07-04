@@ -22,7 +22,8 @@
     "openclaw.plugin.json",
     "CONTRACT.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.md"
   ],
   "engines": {
     "node": ">=18.19"

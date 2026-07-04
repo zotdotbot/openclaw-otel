@@ -63,6 +63,9 @@ describe("published entry point", () => {
         "CONTRACT.md",
         "README.md",
         "LICENSE",
+        // Attribution for the packages inlined into dist/index.js MUST travel
+        // with the artifact that contains them.
+        "THIRD-PARTY-NOTICES.md",
       ]),
     );
     // Source, tests, and build tooling must never end up in the tarball.

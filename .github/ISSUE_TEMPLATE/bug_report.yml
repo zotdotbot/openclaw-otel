@@ -1,0 +1,46 @@
+name: Bug report
+description: Something is broken or emitting wrong telemetry
+labels: ["bug"]
+body:
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: "`@zotdotbot/openclaw-otel` version (see `service.version` on your spans, or your install)"
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: openclaw-version
+    attributes:
+      label: OpenClaw version
+      placeholder: "2026.6.10"
+    validations:
+      required: true
+  - type: input
+    id: backend
+    attributes:
+      label: OTLP backend & protocol
+      placeholder: "SigNoz cloud, http/protobuf"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you observe instead?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Spans / logs / config (redact secrets!)
+      description: >-
+        Relevant span excerpts, gateway log lines (`[otel] …`), and your
+        `plugins.entries.openclaw-otel.config` with endpoints/keys redacted.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I redacted all credentials, endpoints, and conversation content from the report
+          required: true

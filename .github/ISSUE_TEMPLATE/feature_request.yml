@@ -1,0 +1,26 @@
+name: Feature request
+description: Propose new telemetry, config, or behavior
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can't you observe or do today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should the plugin emit or support?
+    validations:
+      required: true
+  - type: textarea
+    id: contract-impact
+    attributes:
+      label: Wire-contract impact
+      description: >-
+        Does this add/change span names, attributes, metrics, or string
+        formats? (New vocabulary means a schema-version bump — see
+        CONTRACT.md.)

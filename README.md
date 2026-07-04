@@ -1,6 +1,12 @@
 # @zotdotbot/openclaw-otel
 
+[![npm version](https://img.shields.io/npm/v/%40zotdotbot%2Fopenclaw-otel)](https://www.npmjs.com/package/@zotdotbot/openclaw-otel)
+[![CI](https://github.com/zotdotbot/openclaw-otel/actions/workflows/ci.yml/badge.svg)](https://github.com/zotdotbot/openclaw-otel/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+<p align="center">
+  <img src="docs/hero.webp" alt="An OpenTelemetry 'O' in a lab coat examines a fully instrumented lobster on an operating table, its vitals streaming to a wall of trace monitors">
+</p>
 
 Self-contained OpenTelemetry plugin for [OpenClaw](https://github.com/openclaw/openclaw):
 connected traces, per-turn token/cost rollups, opt-in conversation content
