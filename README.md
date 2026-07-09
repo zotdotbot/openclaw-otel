@@ -28,6 +28,10 @@ openclaw.request [28.1s]                      ← one agent turn (any channel), 
 
 ## Why
 
+<p align="center">
+  <img src="docs/before-after.webp" alt="Side-by-side trace comparison: the built-in exporter (left) emits four disconnected root spans labeled 'no correlation'; openclaw-otel (right) emits one connected waterfall — openclaw.request → openclaw.agent.turn → context.assembled, chat, and execute_tool spans with durations">
+</p>
+
 OpenClaw's built-in exporter scatters each turn across disconnected root spans —
 no session correlation, no per-turn token/cost rollup, no `gen_ai.*` semconv, so
 OTLP backends can't reconstruct what your agent actually did. This plugin is a
