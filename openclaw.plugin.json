@@ -2,7 +2,7 @@
   "id": "openclaw-otel",
   "name": "Zot OpenClaw Telemetry",
   "description": "Connected traces, token/cost rollups, content capture, and metrics for OpenClaw via OpenTelemetry",
-  "version": "0.3.0",
+  "version": "0.2.1",
   "minOpenClawVersion": ">=2026.4.21",
   "contracts": {
     "tools": ["otel_status"]
