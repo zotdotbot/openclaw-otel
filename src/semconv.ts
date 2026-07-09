@@ -334,6 +334,14 @@ export const OPENCLAW_CONTENT_SYSTEM_PROMPT = "openclaw.content.system_prompt";
  * consumer treats `"{}"` as the capture-off sentinel.
  */
 export const OPENCLAW_CONTENT_TOOL_INPUT = "openclaw.content.tool_input";
+/**
+ * Bounded excerpt of the tool result, emitted only when output capture is on
+ * (gated by `captureContent.toolOutputs`). Truncation is FAILURE-AWARE (issue
+ * #13): on a failed call it is tail-biased (keeps the trailing stderr / exit
+ * line behind a `…[N earlier chars truncated]` marker) so the failure class
+ * survives; on success it is head-biased. The full length always rides
+ * {@link OPENCLAW_TOOL_RESULT_CHARS} regardless of the excerpt.
+ */
 export const OPENCLAW_CONTENT_TOOL_OUTPUT = "openclaw.content.tool_output";
 
 /** Capture-off sentinel value for {@link OPENCLAW_CONTENT_TOOL_INPUT}. */

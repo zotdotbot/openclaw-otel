@@ -4,6 +4,15 @@ All notable changes are documented in the
 [GitHub releases](https://github.com/zotdotbot/openclaw-otel/releases). This
 file is the quick index.
 
+## [0.2.1](https://github.com/zotdotbot/openclaw-otel/releases/tag/v0.2.1) — 2026-07-09
+
+- **Fixed:** `openclaw.content.tool_output` dropped the trailing stderr / exit
+  line on an over-cap **failed** tool result (head-biased truncation), losing
+  the text that names the failure class. Truncation is now failure-aware: a
+  failed call keeps the *tail* behind a `…[N earlier chars truncated]` marker;
+  successful calls keep the head as before (#13). No wire-schema change;
+  content-bias only.
+
 ## [0.2.0](https://github.com/zotdotbot/openclaw-otel/releases/tag/v0.2.0) — 2026-07-03
 
 - **Fixed:** never emit the literal `"unknown"` for `gen_ai.request.model` /

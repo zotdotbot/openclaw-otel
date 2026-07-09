@@ -64,6 +64,12 @@ highest-exposure categories. `captureContent` accepts `true`/`false` or a
 granular policy object toggling `inputMessages`, `outputMessages`,
 `systemPrompt`, `toolInputs`, and `toolOutputs` individually.
 
+Content is bounded to 8 KB per attribute. For `toolOutputs`, truncation is
+failure-aware: a **failed** tool call keeps the *tail* of the result (the
+trailing stderr / exit line, behind a `…[N earlier chars truncated]` marker) so
+the failure class survives; a successful call keeps the head. The uncapped
+result length always rides `openclaw.tool.result_chars`, independent of capture.
+
 ## Installing with plain npm
 
 `npm install @zotdotbot/openclaw-otel` drops the package into `node_modules`;
