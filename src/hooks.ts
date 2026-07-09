@@ -152,6 +152,34 @@ const num = (...vals: unknown[]): number | undefined => {
 const truncate = (s: string, max = CONTENT_MAX_CHARS): string =>
   s.length <= max ? s : s.slice(0, max);
 
+/** Room reserved inside `max` for the tail-truncation marker so the result stays
+ *  bounded by `max` (the marker for realistic sizes is < 48 chars). */
+const TRUNCATE_MARKER_BUDGET = 48;
+
+/**
+ * Tail-biased truncation: keep the LAST `max` chars behind a marker recording how
+ * many earlier chars were dropped. Used for FAILED tool output (issue #13) —
+ * error text (stderr, a nonzero-exit line, an HTTP status) sits at the END of a
+ * tool result far more often than the start, so a head slice would cut exactly
+ * the line that names the failure class. Stays bounded by `max`, like {@link truncate}.
+ */
+const truncateTail = (s: string, max = CONTENT_MAX_CHARS): string => {
+  if (s.length <= max) return s;
+  const keep = max - TRUNCATE_MARKER_BUDGET;
+  const omitted = s.length - keep;
+  return `…[${omitted} earlier chars truncated]\n${s.slice(-keep)}`;
+};
+
+/** True when a tool result signals failure — mirrors the error branch in
+ *  finishToolSpan so the output excerpt and the error status agree. */
+const isErrorResult = (message: AnyEvent | undefined, event: AnyEvent): boolean =>
+  !!(message?.is_error || message?.isError || firstString(event.error));
+
+/** Bounded tool-result excerpt: tail-biased on failure (keep the trailing error),
+ *  head-biased on success (read-tool output reads from the top). */
+const toolOutputExcerpt = (outText: string, isError: boolean): string =>
+  isError ? truncateTail(outText) : truncate(outText);
+
 /** Build an Attributes object dropping undefined values (OTel dislikes them). */
 function attrs(obj: Record<string, string | number | boolean | string[] | undefined>): Attributes {
   const out: Attributes = {};
@@ -599,13 +627,14 @@ export function registerHooks(api: any, deps: HooksDeps): () => void {
     span.setAttribute("openclaw.tool.duration_ms", now() - startTime);
     const message = event.message ?? event.result;
     const outText = extractToolOutputText(message);
+    const errored = isErrorResult(message, event);
     if (outText !== undefined) {
       span.setAttribute(OPENCLAW_TOOL_RESULT_CHARS, outText.length);
       if (capture.toolOutputs) {
-        span.setAttribute(OPENCLAW_CONTENT_TOOL_OUTPUT, truncate(outText));
+        span.setAttribute(OPENCLAW_CONTENT_TOOL_OUTPUT, toolOutputExcerpt(outText, errored));
       }
     }
-    if (message?.is_error || message?.isError || firstString(event.error)) {
+    if (errored) {
       // Issue #7: surface the REAL error instead of a constant. The consumer
       // reads the span status message, so a bare "Error" is replaced by the
       // actual reason; the same sanitized text is mirrored on openclaw.tool.error.
@@ -654,7 +683,8 @@ export function registerHooks(api: any, deps: HooksDeps): () => void {
       active.lastActivityAt = now();
       const outText = extractToolOutputText(event.message);
       if (capture.toolOutputs && outText !== undefined) {
-        active.span.setAttribute(OPENCLAW_CONTENT_TOOL_OUTPUT, truncate(outText));
+        const errored = isErrorResult(event.message as AnyEvent | undefined, event);
+        active.span.setAttribute(OPENCLAW_CONTENT_TOOL_OUTPUT, toolOutputExcerpt(outText, errored));
       }
       return;
     }

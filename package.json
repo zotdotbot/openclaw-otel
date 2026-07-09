@@ -1,6 +1,6 @@
 {
   "name": "@zotdotbot/openclaw-otel",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Self-contained OpenTelemetry plugin for OpenClaw — connected traces, per-turn token/cost rollups, opt-in content capture, and metrics, emitted as GenAI-semconv OTLP to any backend. Ships as one bundled file with zero runtime dependencies.",
   "type": "module",
   "license": "Apache-2.0",

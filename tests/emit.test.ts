@@ -330,6 +330,72 @@ describe("emit oracle — tool error surfacing (issue #7)", () => {
   });
 });
 
+describe("emit oracle — bounded tool-result excerpt (issue #13)", () => {
+  const CAP = 8192; // CONTENT_MAX_CHARS
+
+  it("tail-biases tool_output on a FAILED call so trailing stderr survives truncation", () => {
+    const h = harness(CONTENT_POLICY_ENABLED);
+    h.fire("message_received", { sessionKey: SESSION, content: "x" });
+    h.fire("before_model_resolve", { sessionKey: SESSION });
+    h.fire("before_tool_call", { sessionKey: SESSION, toolName: "exec", toolCallId: "e1", params: { cmd: "./run" } });
+    const stderrTail = "sh: 1: source: not found";
+    // Output larger than the cap with the real error at the END (the common
+    // exec shape). A head-biased excerpt would drop exactly this line.
+    const body = "O".repeat(9000) + "\n" + stderrTail;
+    h.fire("after_tool_call", {
+      sessionKey: SESSION, toolName: "exec", toolCallId: "e1",
+      message: { is_error: true, content: body, details: { exitCode: 127 } },
+    });
+    h.fire("agent_end", { sessionKey: SESSION, success: true, usage: { input_tokens: 1, output_tokens: 1 } });
+    const tool = h.byPrefix("execute_tool ")!;
+    const out = String(tool.attributes["openclaw.content.tool_output"]);
+    expect(out.endsWith(stderrTail)).toBe(true);      // the failure class is preserved
+    expect(out.length).toBeLessThanOrEqual(CAP);
+    expect(out).toMatch(/truncated/);                 // marker signals the head was dropped
+    expect(out).not.toContain("O".repeat(9000));      // head content dropped
+    // the cheap size signal still reflects the FULL result, not the excerpt
+    expect(tool.attributes["openclaw.tool.result_chars"]).toBe(body.length);
+    h.cleanup();
+  });
+
+  it("head-biases tool_output on a SUCCESSFUL call (unchanged) so read-tool output starts at the top", () => {
+    const h = harness(CONTENT_POLICY_ENABLED);
+    h.fire("message_received", { sessionKey: SESSION, content: "x" });
+    h.fire("before_model_resolve", { sessionKey: SESSION });
+    h.fire("before_tool_call", { sessionKey: SESSION, toolName: "read", toolCallId: "r1", params: {} });
+    const head = "FIRST_LINE_OF_FILE";
+    const body = head + "y".repeat(9000);
+    h.fire("after_tool_call", { sessionKey: SESSION, toolName: "read", toolCallId: "r1", message: { content: body } });
+    h.fire("agent_end", { sessionKey: SESSION, success: true, usage: { input_tokens: 1, output_tokens: 1 } });
+    const out = String(h.byPrefix("execute_tool ")!.attributes["openclaw.content.tool_output"]);
+    expect(out.startsWith(head)).toBe(true);
+    expect(out.length).toBeLessThanOrEqual(CAP);
+    h.cleanup();
+  });
+
+  it("leaves short failed-call output unchanged (no truncation marker)", () => {
+    const h = harness(CONTENT_POLICY_ENABLED);
+    h.fire("message_received", { sessionKey: SESSION, content: "x" });
+    h.fire("before_model_resolve", { sessionKey: SESSION });
+    h.fire("before_tool_call", { sessionKey: SESSION, toolName: "exec", toolCallId: "s1", params: {} });
+    h.fire("after_tool_call", { sessionKey: SESSION, toolName: "exec", toolCallId: "s1", message: { is_error: true, content: "boom: exit 1" } });
+    h.fire("agent_end", { sessionKey: SESSION, success: true, usage: { input_tokens: 1, output_tokens: 1 } });
+    expect(h.byPrefix("execute_tool ")!.attributes["openclaw.content.tool_output"]).toBe("boom: exit 1");
+    h.cleanup();
+  });
+
+  it("omits tool_output entirely when output capture is off, even on failure", () => {
+    const h = harness(CONTENT_POLICY_DISABLED);
+    h.fire("message_received", { sessionKey: SESSION, content: "x" });
+    h.fire("before_model_resolve", { sessionKey: SESSION });
+    h.fire("before_tool_call", { sessionKey: SESSION, toolName: "exec", toolCallId: "o1", params: {} });
+    h.fire("after_tool_call", { sessionKey: SESSION, toolName: "exec", toolCallId: "o1", message: { is_error: true, content: "x".repeat(9000) + "\nfatal: boom" } });
+    h.fire("agent_end", { sessionKey: SESSION, success: true, usage: { input_tokens: 1, output_tokens: 1 } });
+    expect(h.byPrefix("execute_tool ")!.attributes["openclaw.content.tool_output"]).toBeUndefined();
+    h.cleanup();
+  });
+});
+
 describe("emit oracle — skill.used span from the diagnostic", () => {
   it("emits openclaw.skill.used joined to the live turn trace, with name + source", () => {
     const h = harness();
