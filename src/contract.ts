@@ -627,7 +627,8 @@ export const CONTRACT_METRICS: readonly ContractMetric[] = [
     keyedBy: ["openclaw.session.key"],
     notes:
       "THE single load-bearing metric the rewrite cannot drop. Incremented on a " +
-      "'session.stalled' diagnostic, grouped by openclaw.session.key (which the " +
+      "'session.stalled' (legacy) or 'session.stuck' (2026.2.6+) diagnostic, " +
+      "grouped by openclaw.session.key (which the " +
       "consumer's stalled-metric groupBy requires). The consumer reads only this " +
       "metric from the entire emitted metric surface.",
   },

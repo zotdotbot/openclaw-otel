@@ -521,10 +521,10 @@ export interface DiagnosticsDeps {
 
 /**
  * Build the diagnostic-event listener: routes `model.usage` to the coordinator,
- * `session.stalled` to the counter, and `skill.used` to an `openclaw.skill.used`
- * span. Pure (no I/O); exported so tests can drive it without the dynamic SDK
- * import. The optional log bridge runs first and is isolated so a logging
- * failure can't skip core handling.
+ * `session.stalled`/`session.stuck` to the counter, and `skill.used` to an
+ * `openclaw.skill.used` span. Pure (no I/O); exported so tests can drive it
+ * without the dynamic SDK import. The optional log bridge runs first and is
+ * isolated so a logging failure can't skip core handling.
  */
 export function makeDiagnosticListener(deps: DiagnosticsDeps): (evt: AnyEvent) => void {
   const now = deps.now ?? Date.now;
@@ -543,7 +543,7 @@ export function makeDiagnosticListener(deps: DiagnosticsDeps): (evt: AnyEvent) =
           deps.coordinator.onUsage(ex.key, ex.usage);
           recordTokenUsage(deps.tokenUsage, ex.usage);
         }
-      } else if (evt?.type === "session.stalled") {
+      } else if (evt?.type === "session.stalled" || evt?.type === "session.stuck") {
         deps.sessionStalled.add(1, {
           [OPENCLAW_SESSION_KEY]: firstString(evt.sessionKey) ?? "unknown",
         });
@@ -663,9 +663,9 @@ async function loadDiagnosticSource(): Promise<DiagnosticSource | null> {
 
 /**
  * Subscribe to OpenClaw diagnostics: route `model.usage` to the coordinator and
- * `session.stalled` to the counter. Returns an unsubscribe function. If the SDK
- * is unavailable, disarms the coordinator (turns end immediately on event-payload
- * usage) and returns a no-op.
+ * `session.stalled`/`session.stuck` to the counter. Returns an unsubscribe
+ * function. If the SDK is unavailable, disarms the coordinator (turns end
+ * immediately on event-payload usage) and returns a no-op.
  */
 export async function initDiagnostics(deps: DiagnosticsDeps): Promise<() => void> {
   const source = await loadDiagnosticSource();
@@ -678,7 +678,7 @@ export async function initDiagnostics(deps: DiagnosticsDeps): Promise<() => void
   }
   const unsubscribe = source(makeDiagnosticListener(deps));
   deps.logger?.info?.(
-    "[otel] subscribed to OpenClaw diagnostics (model.usage, session.stalled, skill.used, " +
+    "[otel] subscribed to OpenClaw diagnostics (model.usage, session.stalled/stuck, skill.used, " +
       "context.assembled, harness.run, message.processed, message.delivery)",
   );
   return typeof unsubscribe === "function" ? unsubscribe : () => {};
