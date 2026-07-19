@@ -4,6 +4,17 @@ All notable changes are documented in the
 [GitHub releases](https://github.com/zotdotbot/openclaw-otel/releases). This
 file is the quick index.
 
+## [0.2.2](https://github.com/zotdotbot/openclaw-otel/releases/tag/v0.2.2) — 2026-07-19
+
+- **Fixed:** the keyed `openclaw.session.stalled` counter was dead against
+  modern OpenClaw gateways. OpenClaw `2026.2.6` renamed the watchdog diagnostic
+  from `session.stalled` to `session.stuck`; the plugin only listened for the
+  old name, so on those gateways stall alerts fell back to core's keyless
+  `openclaw.session.stuck` counter and lost per-session attribution. The
+  listener now routes **both** `session.stalled` (legacy) and `session.stuck`
+  (2026.2.6+) to the same counter, keyed by `openclaw.session.key` (#17). Purely
+  additive — no wire-schema change (stays `1.8.0`); no consumer change.
+
 ## [0.2.1](https://github.com/zotdotbot/openclaw-otel/releases/tag/v0.2.1) — 2026-07-09
 
 - **Fixed:** `openclaw.content.tool_output` dropped the trailing stderr / exit

@@ -265,6 +265,27 @@ describe("makeDiagnosticListener — skill.used routing", () => {
   });
 });
 
+describe("makeDiagnosticListener — session stall routing", () => {
+  it("increments the same keyed counter for session.stalled and session.stuck", () => {
+    const adds: any[] = [];
+    const sessionStalled = { add: (n: number, attrs: any) => adds.push({ n, attrs }) } as any;
+    const listen = makeDiagnosticListener({
+      coordinator: new UsageCoordinator(),
+      sessionStalled,
+    });
+
+    listen({ type: "session.stalled", sessionKey: "agent:1:slack:t" });
+    listen({ type: "session.stuck", sessionKey: "agent:2:cron:x" });
+    listen({ type: "session.stuck" });
+
+    expect(adds).toEqual([
+      { n: 1, attrs: { "openclaw.session.key": "agent:1:slack:t" } },
+      { n: 1, attrs: { "openclaw.session.key": "agent:2:cron:x" } },
+      { n: 1, attrs: { "openclaw.session.key": "unknown" } },
+    ]);
+  });
+});
+
 describe("emitSkillUsedSpan — timestamp clamp", () => {
   it("clamps the span start into [turn start, now] so it sorts after its parent root", () => {
     const starts: number[] = [];
